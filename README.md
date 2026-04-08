@@ -1,266 +1,203 @@
-ini ada query database toko_minuman. tolong buatkan ini dalam bentuk markdown yang bisa langsung di copas ke readme github.
+# 📦 Database Toko Minuman
 
-Setting environment for using XAMPP for Windows.
-User@KEMALA c:\xampp
-# mysql -u root
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MariaDB connection id is 26
-Server version: 10.4.32-MariaDB mariadb.org binary distribution
+## 🗄️ 1. Membuat Database
+CREATE DATABASE toko_minuman;
+USE toko_minuman;
 
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+---
 
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+## 📋 2. Struktur Tabel
 
-MariaDB [(none)]> create database toko_minuman;
-Query OK, 1 row affected (0.003 sec)
+### Tabel produk
+CREATE TABLE produk (
+    id_produk INT AUTO_INCREMENT PRIMARY KEY,
+    nama_produk VARCHAR(100),
+    harga INT,
+    stok INT
+);
 
-MariaDB [(none)]> use toko_minuman;
-Database changed
-MariaDB [toko_minuman]> create table produk (
-    ->     id_produk int auto_increment primary key,
-    ->     nama_produk varchar(100),
-    ->     harga int,
-    ->     stok int
-    -> );
-Query OK, 0 rows affected (0.043 sec)
+### Tabel pelanggan
+CREATE TABLE pelanggan (
+    id_pelanggan INT AUTO_INCREMENT PRIMARY KEY,
+    nama_pelanggan VARCHAR(100)
+);
 
-MariaDB [toko_minuman]> create table pelanggan (
-    ->     id_pelanggan int auto_increment primary key,
-    ->     nama_pelanggan varchar(100)
-    -> );
-Query OK, 0 rows affected (0.047 sec)
+### Tabel transaksi
+CREATE TABLE transaksi (
+    id_transaksi INT AUTO_INCREMENT PRIMARY KEY,
+    id_produk INT,
+    id_pelanggan INT,
+    jumlah INT,
+    total_harga INT,
+    FOREIGN KEY (id_produk) REFERENCES produk(id_produk),
+    FOREIGN KEY (id_pelanggan) REFERENCES pelanggan(id_pelanggan)
+);
 
-MariaDB [toko_minuman]> create table transaksi (
-    ->     id_transaksi int auto_increment primary key,
-    ->     id_produk int,
-    ->     id_pelanggan int,
-    ->     jumlah int,
-    ->     total_harga int,
-    ->     foreign key (id_produk) references produk(id_produk),
-    ->     foreign key (id_pelanggan) references pelanggan(id_pelanggan)
-    -> );
-Query OK, 0 rows affected (0.071 sec)
+### Tabel pembayaran
+CREATE TABLE pembayaran (
+    id_bayar INT AUTO_INCREMENT PRIMARY KEY,
+    id_transaksi INT,
+    jumlah_bayar INT,
+    FOREIGN KEY (id_transaksi) REFERENCES transaksi(id_transaksi)
+);
 
-MariaDB [toko_minuman]> create table pembayaran (
-    ->     id_bayar int auto_increment primary key,
-    ->     id_transaksi int,
-    ->     jumlah_bayar int,
-    ->     foreign key (id_transaksi) references transaksi(id_transaksi)
-    -> );
-Query OK, 0 rows affected (0.080 sec)
+### Tabel log_aktivitas
+CREATE TABLE log_aktivitas (
+    id_log INT AUTO_INCREMENT PRIMARY KEY,
+    keterangan VARCHAR(255)
+);
 
-MariaDB [toko_minuman]> create table log_aktivitas (
-    ->     id_log int auto_increment primary key,
-    ->     keterangan varchar(255)
-    -> );
-Query OK, 0 rows affected (0.045 sec)
+---
 
-MariaDB [toko_minuman]> insert into produk (nama_produk, harga, stok) values
-    -> ('Es Kopi Susu', 18000, 20),
-    -> ('Matcha Latte', 22000, 15),
-    -> ('Thai Tea', 15000, 25),
-    -> ('Cokelat Creamy', 20000, 10);
-Query OK, 4 rows affected (0.015 sec)
-Records: 4  Duplicates: 0  Warnings: 0
+## 🧾 3. Insert Data Awal
 
-MariaDB [toko_minuman]> insert into pelanggan (nama_pelanggan) values
-    -> ('Kemala'),
-    -> ('Bama'),
-    -> ('Nabil');
-Query OK, 3 rows affected (0.034 sec)
-Records: 3  Duplicates: 0  Warnings: 0
+### Produk
+INSERT INTO produk (nama_produk, harga, stok) VALUES
+('Es Kopi Susu', 18000, 20),
+('Matcha Latte', 22000, 15),
+('Thai Tea', 15000, 25),
+('Cokelat Creamy', 20000, 10);
 
-MariaDB [toko_minuman]> delimiter $$
-MariaDB [toko_minuman]> create trigger trg_total_harga
-    -> before insert on transaksi
-    -> for each row
-    -> set new.total_harga = (
-    ->     select harga * new.jumlah
-    ->     from produk
-    ->     where id_produk = new.id_produk
-    -> );
-    -> $$
-Query OK, 0 rows affected (0.045 sec)
+### Pelanggan
+INSERT INTO pelanggan (nama_pelanggan) VALUES
+('Kemala'),
+('Bama'),
+('Nabil');
 
-MariaDB [toko_minuman]> delimiter ;
-MariaDB [toko_minuman]> delimiter $$
-MariaDB [toko_minuman]> create trigger trg_kurangi_stok
-    -> after insert on transaksi
-    -> for each row
-    -> begin
-    ->     update produk
-    ->     set stok = stok - new.jumlah
-    ->     where id_produk = new.id_produk;
-    -> end$$
-Query OK, 0 rows affected (0.048 sec)
+---
 
-MariaDB [toko_minuman]> delimiter ;
-MariaDB [toko_minuman]> delimiter $$
-MariaDB [toko_minuman]> create trigger trg_log_transaksi
-    -> after insert on transaksi
-    -> for each row
-    -> begin
-    ->     insert into log_aktivitas(keterangan)
-    ->     values (concat('Transaksi baru: Produk ID ', new.id_produk, ', Pelanggan ID ', new.id_pelanggan, ', Jumlah ', new.jumlah, ', Total ', new.total_harga));
-    -> end$$
-Query OK, 0 rows affected (0.042 sec)
+## ⚙️ 4. Trigger
 
-MariaDB [toko_minuman]> delimiter ;
-MariaDB [toko_minuman]> delimiter $$
-MariaDB [toko_minuman]> create trigger trg_stok_habis
-    -> after update on produk
-    -> for each row
-    -> begin
-    ->     if new.stok = 0 then
-    ->         insert into log_aktivitas(keterangan)
-    ->         values (concat('Stok habis untuk Produk ID ', new.id_produk));
-    ->     end if;
-    -> end$$
-Query OK, 0 rows affected (0.039 sec)
+### Hitung Total Harga
+DELIMITER $$
+CREATE TRIGGER trg_total_harga
+BEFORE INSERT ON transaksi
+FOR EACH ROW
+SET NEW.total_harga = (
+    SELECT harga * NEW.jumlah
+    FROM produk
+    WHERE id_produk = NEW.id_produk
+);
+$$
+DELIMITER ;
 
-MariaDB [toko_minuman]> delimiter ;
-MariaDB [toko_minuman]> delimiter $$
-MariaDB [toko_minuman]> create trigger trg_kembalikan_stok
-    -> after delete on transaksi
-    -> for each row
-    -> begin
-    ->     update produk
-    ->     set stok = stok + old.jumlah
-    ->     where id_produk = old.id_produk;
-    -> end$$
-Query OK, 0 rows affected (0.040 sec)
+### Kurangi Stok
+DELIMITER $$
+CREATE TRIGGER trg_kurangi_stok
+AFTER INSERT ON transaksi
+FOR EACH ROW
+BEGIN
+    UPDATE produk
+    SET stok = stok - NEW.jumlah
+    WHERE id_produk = NEW.id_produk;
+END$$
+DELIMITER ;
 
-MariaDB [toko_minuman]> delimiter ;
-MariaDB [toko_minuman]> delimiter $$
-MariaDB [toko_minuman]> create trigger trg_log_pembayaran
-    -> after insert on pembayaran
-    -> for each row
-    -> begin
-    ->     insert into log_aktivitas(keterangan)
-    ->     values (concat('Pembayaran berhasil: ID Transaksi ', new.id_transaksi, ', Jumlah ', new.jumlah_bayar));
-    -> end$$
-Query OK, 0 rows affected (0.050 sec)
+### Log Transaksi
+DELIMITER $$
+CREATE TRIGGER trg_log_transaksi
+AFTER INSERT ON transaksi
+FOR EACH ROW
+BEGIN
+    INSERT INTO log_aktivitas(keterangan)
+    VALUES (
+        CONCAT('Transaksi baru: Produk ID ', NEW.id_produk,
+        ', Pelanggan ID ', NEW.id_pelanggan,
+        ', Jumlah ', NEW.jumlah,
+        ', Total ', NEW.total_harga)
+    );
+END$$
+DELIMITER ;
 
-MariaDB [toko_minuman]> delimiter ;
-MariaDB [toko_minuman]> insert into transaksi (id_produk, id_pelanggan, jumlah) values (1,1,2);
-Query OK, 1 row affected (0.048 sec)
+### Log Stok Habis
+DELIMITER $$
+CREATE TRIGGER trg_stok_habis
+AFTER UPDATE ON produk
+FOR EACH ROW
+BEGIN
+    IF NEW.stok = 0 THEN
+        INSERT INTO log_aktivitas(keterangan)
+        VALUES (CONCAT('Stok habis untuk Produk ID ', NEW.id_produk));
+    END IF;
+END$$
+DELIMITER ;
 
-MariaDB [toko_minuman]> insert into transaksi (id_produk, id_pelanggan, jumlah) values (2,2,1);
-Query OK, 1 row affected (0.039 sec)
+### Kembalikan Stok
+DELIMITER $$
+CREATE TRIGGER trg_kembalikan_stok
+AFTER DELETE ON transaksi
+FOR EACH ROW
+BEGIN
+    UPDATE produk
+    SET stok = stok + OLD.jumlah
+    WHERE id_produk = OLD.id_produk;
+END$$
+DELIMITER ;
 
-MariaDB [toko_minuman]> insert into transaksi (id_produk, id_pelanggan, jumlah) values (3,3,5);
-Query OK, 1 row affected (0.030 sec)
+### Log Pembayaran
+DELIMITER $$
+CREATE TRIGGER trg_log_pembayaran
+AFTER INSERT ON pembayaran
+FOR EACH ROW
+BEGIN
+    INSERT INTO log_aktivitas(keterangan)
+    VALUES (
+        CONCAT('Pembayaran berhasil: ID Transaksi ',
+        NEW.id_transaksi, ', Jumlah ', NEW.jumlah_bayar)
+    );
+END$$
+DELIMITER ;
 
-MariaDB [toko_minuman]> insert into pembayaran (id_transaksi, jumlah_bayar) values (1, 36000);
-Query OK, 1 row affected (0.034 sec)
+---
 
-MariaDB [toko_minuman]> insert into pembayaran (id_transaksi, jumlah_bayar) values (2, 22000);
-Query OK, 1 row affected (0.030 sec)
+## 💳 5. Transaksi & Pembayaran
 
-MariaDB [toko_minuman]> insert into pembayaran (id_transaksi, jumlah_bayar) values (3, 75000);
-Query OK, 1 row affected (0.029 sec)
+INSERT INTO transaksi (id_produk, id_pelanggan, jumlah) VALUES
+(1,1,2),
+(2,2,1),
+(3,3,5);
 
-MariaDB [toko_minuman]> create view view_transaksi_detail as
-    -> select t.id_transaksi, p.nama_produk, c.nama_pelanggan, t.jumlah, t.total_harga
-    -> from transaksi t
-    -> join produk p on t.id_produk = p.id_produk
-    -> join pelanggan c on t.id_pelanggan = c.id_pelanggan;
-Query OK, 0 rows affected (0.033 sec)
+INSERT INTO pembayaran (id_transaksi, jumlah_bayar) VALUES
+(1, 36000),
+(2, 22000),
+(3, 75000);
 
-MariaDB [toko_minuman]> create view view_stok_produk as
-    -> select id_produk, nama_produk, stok
-    -> from produk;
-Query OK, 0 rows affected (0.032 sec)
+---
 
-MariaDB [toko_minuman]> show triggers;
-+---------------------+--------+------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+------------------------+-----------------------------------------------------+----------------+----------------------+----------------------+--------------------+
-| Trigger             | Event  | Table      | Statement                                                                                                                                                                                                        | Timing | Created                | sql_mode                                            | Definer        | character_set_client | collation_connection | Database Collation |
-+---------------------+--------+------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+------------------------+-----------------------------------------------------+----------------+----------------------+----------------------+--------------------+
-| trg_log_pembayaran  | INSERT | pembayaran | begin
-    insert into log_aktivitas(keterangan)
-    values (concat('Pembayaran berhasil: ID Transaksi ', new.id_transaksi, ', Jumlah ', new.jumlah_bayar));
-end                                                  | AFTER  | 2026-04-08 12:31:35.46 | NO_ZERO_IN_DATE,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION | root@localhost | utf8mb4              | utf8mb4_general_ci   | utf8mb4_general_ci |
-| trg_stok_habis      | UPDATE | produk     | begin
-    if new.stok = 0 then
-        insert into log_aktivitas(keterangan)
-        values (concat('Stok habis untuk Produk ID ', new.id_produk));
-    end if;
-end                                              | AFTER  | 2026-04-08 12:31:11.29 | NO_ZERO_IN_DATE,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION | root@localhost | utf8mb4              | utf8mb4_general_ci   | utf8mb4_general_ci |
-| trg_total_harga     | INSERT | transaksi  | set new.total_harga = (
-    select harga * new.jumlah
-    from produk
-    where id_produk = new.id_produk
-)                                                                                                      | BEFORE | 2026-04-08 12:30:14.31 | NO_ZERO_IN_DATE,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION | root@localhost | utf8mb4              | utf8mb4_general_ci   | utf8mb4_general_ci |
-| trg_kurangi_stok    | INSERT | transaksi  | begin
-    update produk
-    set stok = stok - new.jumlah
-    where id_produk = new.id_produk;
-end                                                                                                                | AFTER  | 2026-04-08 12:30:32.24 | NO_ZERO_IN_DATE,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION | root@localhost | utf8mb4              | utf8mb4_general_ci   | utf8mb4_general_ci |
-| trg_log_transaksi   | INSERT | transaksi  | begin
-    insert into log_aktivitas(keterangan)
-    values (concat('Transaksi baru: Produk ID ', new.id_produk, ', Pelanggan ID ', new.id_pelanggan, ', Jumlah ', new.jumlah, ', Total ', new.total_harga));
-end | AFTER  | 2026-04-08 12:30:56.42 | NO_ZERO_IN_DATE,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION | root@localhost | utf8mb4              | utf8mb4_general_ci   | utf8mb4_general_ci |
-| trg_kembalikan_stok | DELETE | transaksi  | begin
-    update produk
-    set stok = stok + old.jumlah
-    where id_produk = old.id_produk;
-end                                                                                                                | AFTER  | 2026-04-08 12:31:22.20 | NO_ZERO_IN_DATE,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION | root@localhost | utf8mb4              | utf8mb4_general_ci   | utf8mb4_general_ci |
-+---------------------+--------+------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+------------------------+-----------------------------------------------------+----------------+----------------------+----------------------+--------------------+
-6 rows in set (0.036 sec)
+## 👁️ 6. View
 
-MariaDB [toko_minuman]> select * from transaksi;
-+--------------+-----------+--------------+--------+-------------+
-| id_transaksi | id_produk | id_pelanggan | jumlah | total_harga |
-+--------------+-----------+--------------+--------+-------------+
-|            1 |         1 |            1 |      2 |       36000 |
-|            2 |         2 |            2 |      1 |       22000 |
-|            3 |         3 |            3 |      5 |       75000 |
-+--------------+-----------+--------------+--------+-------------+
-3 rows in set (0.001 sec)
+### View Transaksi Detail
+CREATE VIEW view_transaksi_detail AS
+SELECT 
+    t.id_transaksi,
+    p.nama_produk,
+    c.nama_pelanggan,
+    t.jumlah,
+    t.total_harga
+FROM transaksi t
+JOIN produk p ON t.id_produk = p.id_produk
+JOIN pelanggan c ON t.id_pelanggan = c.id_pelanggan;
 
-MariaDB [toko_minuman]> select * from produk;
-+-----------+----------------+-------+------+
-| id_produk | nama_produk    | harga | stok |
-+-----------+----------------+-------+------+
-|         1 | Es Kopi Susu   | 18000 |   18 |
-|         2 | Matcha Latte   | 22000 |   14 |
-|         3 | Thai Tea       | 15000 |   20 |
-|         4 | Cokelat Creamy | 20000 |   10 |
-+-----------+----------------+-------+------+
-4 rows in set (0.001 sec)
+### View Stok Produk
+CREATE VIEW view_stok_produk AS
+SELECT id_produk, nama_produk, stok
+FROM produk;
 
-MariaDB [toko_minuman]> select * from log_aktivitas;
-+--------+--------------------------------------------------------------------+
-| id_log | keterangan                                                         |
-+--------+--------------------------------------------------------------------+
-|      1 | Transaksi baru: Produk ID 1, Pelanggan ID 1, Jumlah 2, Total 36000 |
-|      2 | Transaksi baru: Produk ID 2, Pelanggan ID 2, Jumlah 1, Total 22000 |
-|      3 | Transaksi baru: Produk ID 3, Pelanggan ID 3, Jumlah 5, Total 75000 |
-|      4 | Pembayaran berhasil: ID Transaksi 1, Jumlah 36000                  |
-|      5 | Pembayaran berhasil: ID Transaksi 2, Jumlah 22000                  |
-|      6 | Pembayaran berhasil: ID Transaksi 3, Jumlah 75000                  |
-+--------+--------------------------------------------------------------------+
-6 rows in set (0.027 sec)
+---
 
-MariaDB [toko_minuman]> select * from view_transaksi_detail;
-+--------------+--------------+----------------+--------+-------------+
-| id_transaksi | nama_produk  | nama_pelanggan | jumlah | total_harga |
-+--------------+--------------+----------------+--------+-------------+
-|            1 | Es Kopi Susu | Kemala         |      2 |       36000 |
-|            2 | Matcha Latte | Bama           |      1 |       22000 |
-|            3 | Thai Tea     | Nabil          |      5 |       75000 |
-+--------------+--------------+----------------+--------+-------------+
-3 rows in set (0.030 sec)
+## 📊 7. Query Data
 
-MariaDB [toko_minuman]> select * from view_stok_produk;
-+-----------+----------------+------+
-| id_produk | nama_produk    | stok |
-+-----------+----------------+------+
-|         1 | Es Kopi Susu   |   18 |
-|         2 | Matcha Latte   |   14 |
-|         3 | Thai Tea       |   20 |
-|         4 | Cokelat Creamy |   10 |
-+-----------+----------------+------+
-4 rows in set (0.002 sec)
+SELECT * FROM transaksi;
+SELECT * FROM produk;
+SELECT * FROM log_aktivitas;
+SELECT * FROM view_transaksi_detail;
+SELECT * FROM view_stok_produk;
 
-MariaDB [toko_minuman]>
+---
+
+## ✅ 8. Hasil
+
+- Total harga otomatis terhitung
+- Stok berkurang otomatis
+- Log aktivitas tercatat
+- View mempermudah query data
