@@ -2,8 +2,7 @@
 ![MySQL](https://img.shields.io/badge/mysql-%2300f.svg?style=for-the-badge&logo=mysql&logoColor=white)
 ![Database](https://img.shields.io/badge/Database-Relational-blue?style=for-the-badge)
 
-> Sistem database untuk manajemen toko minuman menggunakan **MySQL / MariaDB**  
-> Mencakup: tabel, relasi, trigger otomatis, dan view laporan.
+> Sistem database untuk manajemen toko minuman menggunakan **MySQL**  
 
 👨‍💻 Kelompok 2 Anggota :
 - Kemala Putri Oktaviani (16)
@@ -377,17 +376,6 @@ FROM produk;
 
 ---
 
-# 🚀 Status Project
-
-| Fitur        | Status |
-|-------------|--------|
-| Tabel       | ✅ |
-| Relasi      | ✅ |
-| Trigger     | ✅ |
-| View        | ✅ |
-| Testing     | ✅ |
-
----
 
 # 👨‍💻 Dibuat Oleh
-**© 2026 - Database Toko Minuman**
+**© 2026 - Kelompok 2**
