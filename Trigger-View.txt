@@ -1,0 +1,270 @@
+C:\>cd laragon\bin\mysql
+
+C:\laragon\bin\mysql>mysql -u root
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 8
+Server version: 8.0.30 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2022, Oracle and/or its affiliates.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> create database toko_minuman;
+ERROR 1007 (HY000): Can't create database 'toko_minuman'; database exists
+mysql> drop database toko_minuman;
+Query OK, 6 rows affected (0.07 sec)
+
+mysql> create database toko_minuman;
+Query OK, 1 row affected (0.00 sec)
+
+mysql> use toko_minuman;
+Database changed
+mysql> CREATE TABLE produk (
+    ->id_produk INT AUTO_INCREMENT PRIMARY KEY,
+    ->nama_produk VARCHAR(100),
+    ->harga INT,
+    ->stok INT
+    -> );
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> CREATE TABLE pelanggan (
+    ->id_pelanggan INT AUTO_INCREMENT PRIMARY KEY,
+    ->nama_pelanggan VARCHAR(100)
+    -> );
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> CREATE TABLE transaksi (
+    ->id_transaksi INT AUTO_INCREMENT PRIMARY KEY,
+    ->id_produk INT,
+    ->id_pelanggan INT,
+    ->jumlah INT,
+    ->total_harga INT,
+    ->FOREIGN KEY (id_produk) REFERENCES produk(id_produk),
+    ->FOREIGN KEY (id_pelanggan) REFERENCES pelanggan(id_pelanggan)
+    -> );
+Query OK, 0 rows affected (0.05 sec)
+
+mysql> CREATE TABLE pembayaran (
+    ->id_bayar INT AUTO_INCREMENT PRIMARY KEY,
+    ->id_transaksi INT,
+    ->jumlah_bayar INT,
+    ->FOREIGN KEY (id_transaksi) REFERENCES transaksi(id_transaksi)
+    -> );
+Query OK, 0 rows affected (0.05 sec)
+
+mysql> CREATE TABLE log_aktivitas (
+    ->id_log INT AUTO_INCREMENT PRIMARY KEY,
+    ->keterangan VARCHAR(255)
+    -> );
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> INSERT INTO produk (nama_produk, harga, stok) VALUES
+    -> ('Es Kopi Susu', 18000, 20),
+    -> ('Matcha Latte', 22000, 15),
+    -> ('Thai Tea', 15000, 25),
+    -> ('Cokelat Creamy', 20000, 10);
+Query OK, 4 rows affected (0.02 sec)
+Records: 4  Duplicates: 0  Warnings: 0
+
+mysql> INSERT INTO pelanggan (nama_pelanggan) VALUES
+    -> ('Kemala'),
+    -> ('Bama'),
+    -> ('Nabil');
+Query OK, 3 rows affected (0.01 sec)
+Records: 3  Duplicates: 0  Warnings: 0
+
+mysql> DELIMITER $$
+mysql>
+mysql> CREATE TRIGGER trg_total_harga
+    -> BEFORE INSERT ON transaksi
+    -> FOR EACH ROW
+    -> SET NEW.total_harga = (
+    ->     SELECT harga * NEW.jumlah
+    ->     FROM produk
+    ->     WHERE id_produk = NEW.id_produk
+    -> );
+    ->
+    -> $$
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> DELIMITER ;
+mysql> DELIMITER $$
+mysql>
+mysql> CREATE TRIGGER trg_kurangi_stok
+    -> AFTER INSERT ON transaksi
+    -> FOR EACH ROW
+    -> BEGIN
+    ->     UPDATE produk
+    ->     SET stok = stok - NEW.jumlah
+    ->     WHERE id_produk = NEW.id_produk;
+    -> END$$
+Query OK, 0 rows affected (0.02 sec)
+
+mysql>
+mysql> DELIMITER ;
+mysql> DELIMITER $$
+mysql>
+mysql> CREATE TRIGGER trg_log_transaksi
+    -> AFTER INSERT ON transaksi
+    -> FOR EACH ROW
+    -> BEGIN
+    ->     INSERT INTO log_aktivitas(keterangan)
+    ->     VALUES (
+    ->         CONCAT(
+    ->             'Transaksi baru: Produk ID ', NEW.id_produk,
+    ->             ', Pelanggan ID ', NEW.id_pelanggan,
+    ->             ', Jumlah ', NEW.jumlah,
+    ->             ', Total ', NEW.total_harga
+    ->         )
+    ->     );
+    -> END$$
+Query OK, 0 rows affected (0.02 sec)
+
+mysql>
+mysql> DELIMITER ;
+mysql> DELIMITER $$
+mysql>
+mysql> CREATE TRIGGER trg_stok_habis
+    -> AFTER UPDATE ON produk
+    -> FOR EACH ROW
+    -> BEGIN
+    ->     IF NEW.stok = 0 THEN
+    ->         INSERT INTO log_aktivitas(keterangan)
+    ->         VALUES (
+    ->             CONCAT('Stok habis untuk Produk ID ', NEW.id_produk)
+    ->         );
+    ->     END IF;
+    -> END$$
+Query OK, 0 rows affected (0.01 sec)
+
+mysql>
+mysql> DELIMITER ;
+mysql> DELIMITER $$
+mysql>
+mysql> CREATE TRIGGER trg_kembalikan_stok
+    -> AFTER DELETE ON transaksi
+    -> FOR EACH ROW
+    -> BEGIN
+    ->     UPDATE produk
+    ->     SET stok = stok + OLD.jumlah
+    ->     WHERE id_produk = OLD.id_produk;
+    -> END$$
+Query OK, 0 rows affected (0.02 sec)
+
+mysql>
+mysql> DELIMITER ;
+mysql> DELIMITER $$
+mysql>
+mysql> CREATE TRIGGER trg_log_pembayaran
+    -> AFTER INSERT ON pembayaran
+    -> FOR EACH ROW
+    -> BEGIN
+    ->     INSERT INTO log_aktivitas(keterangan)
+    ->     VALUES (
+    ->       CONCAT(
+    ->          'Pembayaran berhasil: ID Transaksi ',
+    ->           NEW.id_transaksi,
+    ->           ', Jumlah ',
+    ->           NEW.jumlah_bayar)
+    ->     );
+    -> END$$
+Query OK, 0 rows affected (0.02 sec)
+
+mysql>
+mysql> DELIMITER ;
+mysql> INSERT INTO transaksi (id_produk, id_pelanggan, jumlah) VALUES (1,1,2);
+Query OK, 1 row affected (0.02 sec)
+
+mysql> INSERT INTO transaksi (id_produk, id_pelanggan, jumlah) VALUES (2,2,1);
+Query OK, 1 row affected (0.00 sec)
+
+mysql> INSERT INTO transaksi (id_produk, id_pelanggan, jumlah) VALUES (3,3,5);
+Query OK, 1 row affected (0.00 sec)
+
+mysql>
+mysql> INSERT INTO pembayaran (id_transaksi, jumlah_bayar) VALUES (1, 36000);
+Query OK, 1 row affected (0.00 sec)
+
+mysql> INSERT INTO pembayaran (id_transaksi, jumlah_bayar) VALUES (2, 22000);
+Query OK, 1 row affected (0.00 sec)
+
+mysql> INSERT INTO pembayaran (id_transaksi, jumlah_bayar) VALUES (3, 75000);
+Query OK, 1 row affected (0.00 sec)
+
+mysql> CREATE VIEW view_transaksi_detail AS
+    -> SELECT
+    ->t.id_transaksi,
+    ->p.nama_produk,
+    ->c.nama_pelanggan,
+    ->t.jumlah,
+    ->t.total_harga
+    -> FROM transaksi t
+    -> JOIN produk p ON t.id_produk = p.id_produk
+    -> JOIN pelanggan c ON t.id_pelanggan = c.id_pelanggan;
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> CREATE VIEW view_stok_produk AS
+    -> SELECT id_produk, nama_produk, stok
+    -> FROM produk;
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> SELECT * FROM transaksi;
++--------------+-----------+--------------+--------+-------------+
+| id_transaksi | id_produk | id_pelanggan | jumlah | total_harga |
++--------------+-----------+--------------+--------+-------------+
+|            1 |         1 |            1 |      2 |       36000 |
+|            2 |         2 |            2 |      1 |       22000 |
+|            3 |         3 |            3 |      5 |       75000 |
++--------------+-----------+--------------+--------+-------------+
+3 rows in set (0.00 sec)
+
+mysql> SELECT * FROM produk;
++-----------+----------------+-------+------+
+| id_produk | nama_produk    | harga | stok |
++-----------+----------------+-------+------+
+|         1 | Es Kopi Susu   | 18000 |   18 |
+|         2 | Matcha Latte   | 22000 |   14 |
+|         3 | Thai Tea       | 15000 |   20 |
+|         4 | Cokelat Creamy | 20000 |   10 |
++-----------+----------------+-------+------+
+4 rows in set (0.00 sec)
+
+mysql> SELECT * FROM log_aktivitas;
++--------+--------------------------------------------------------------------+
+| id_log | keterangan                                                         |
++--------+--------------------------------------------------------------------+
+|      1 | Transaksi baru: Produk ID 1, Pelanggan ID 1, Jumlah 2, Total 36000 |
+|      2 | Transaksi baru: Produk ID 2, Pelanggan ID 2, Jumlah 1, Total 22000 |
+|      3 | Transaksi baru: Produk ID 3, Pelanggan ID 3, Jumlah 5, Total 75000 |
+|      4 | Pembayaran berhasil: ID Transaksi 1, Jumlah 36000                  |
+|      5 | Pembayaran berhasil: ID Transaksi 2, Jumlah 22000                  |
+|      6 | Pembayaran berhasil: ID Transaksi 3, Jumlah 75000                  |
++--------+--------------------------------------------------------------------+
+6 rows in set (0.00 sec)
+
+mysql> SELECT * FROM view_transaksi_detail;
++--------------+--------------+----------------+--------+-------------+
+| id_transaksi | nama_produk  | nama_pelanggan | jumlah | total_harga |
++--------------+--------------+----------------+--------+-------------+
+|            1 | Es Kopi Susu | Kemala         |      2 |       36000 |
+|            2 | Matcha Latte | Bama           |      1 |       22000 |
+|            3 | Thai Tea     | Nabil          |      5 |       75000 |
++--------------+--------------+----------------+--------+-------------+
+3 rows in set (0.01 sec)
+
+mysql> SELECT * FROM view_stok_produk;
++-----------+----------------+------+
+| id_produk | nama_produk    | stok |
++-----------+----------------+------+
+|         1 | Es Kopi Susu   |   18 |
+|         2 | Matcha Latte   |   14 |
+|         3 | Thai Tea       |   20 |
+|         4 | Cokelat Creamy |   10 |
++-----------+----------------+------+
+4 rows in set (0.00 sec)
+
+mysql>
